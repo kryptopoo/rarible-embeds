@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Rarible Embeds Demo</title>
+    <script src="../dist/rarible-embeds.min.js"></script>
+    <script>
+        function generateNFTCard() {
+            var raribleCard = document.createElement('rarible-card');
+            raribleCard.setAttribute('itemId', document.getElementById("item-id").value)
+            document.getElementById("embeds").appendChild(raribleCard)
+        }
+        function generateQRCode() {
+            var raribleQr = document.createElement('rarible-qr');
+            raribleQr.setAttribute('itemId', document.getElementById("item-id").value)
+            document.getElementById("embeds").appendChild(raribleQr)
+        }
+    </script>
+    <style>
+        html {
+            margin: auto;
+            padding: auto;
+            padding: 10px;
+            text-align: center;
+        }
+
+        input {
+            font-size: larger;
+            margin: 3px;
+            min-height: 32px;
+            cursor: pointer;
+        }
+
+        input[type="text"] {
+            min-width: 600px;
+        }
+
+        input[type="button"] {
+            min-width: 150px;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <h1>Rarible Embeds</h1>
+        <div>
+            <input type="text" id="item-id" placeholder="item id"
+                value="0x60f80121c31a0d46b5279700f9df786054aa5ee5:1137205" />
+        </div>
+        <div>
+            <input type="button" value="NFT Card" onclick="generateNFTCard()" />
+            <input type="button" value="QR Code" onclick="generateQRCode()" />
+        </div>
+        <div id="embeds"></div>
+    </div>
+</body>
+
+</html>
