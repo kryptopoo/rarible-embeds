@@ -1,30 +1,35 @@
-import { RaribleApi } from "./rarible-api";
-import { roundPrice } from "./utils";
-import Web3 from "web3"
+import { RaribleApi } from './rarible-api'
+import { roundPrice } from './utils'
+import { RaribleConstant } from './constants'
+import Web3 from 'web3'
 
 export class RaribleBuyNow extends HTMLElement {
-    private rendered = false;
-    private url = "https://rarible.com";
+    private rendered = false
+    private web3: Web3
+    private buyerAddress: string
 
     constructor() {
-        super();
+        super()
     }
 
     connectedCallback() {
         if (!this.rendered) {
-            this.render();
-            this.rendered = true;
+            this.render()
+            this.rendered = true
         }
     }
 
     public render() {
-        let ownershipId = this.getAttribute("ownershipId");
-        let api: RaribleApi = new RaribleApi();
+        const ownershipId = this.getAttribute('ownershipId')
+        const protocolApiUrl = this.getAttribute('protocolApiUrl')
+        const marketplaceApiUrl = this.getAttribute('marketplaceApiUrl')
 
         const itemId = `${ownershipId.split(':')[0]}:${ownershipId.split(':')[1]}`
+
+        const api: RaribleApi = new RaribleApi(protocolApiUrl, marketplaceApiUrl)
         const getMappingItem = api.getMarketMappingItems([itemId])
         const getOrder = api.getOrderByOwnership(ownershipId)
-        api.getAll([getMappingItem, getOrder]).then(resData => {
+        api.getAll([getMappingItem, getOrder]).then((resData) => {
             const itemInfo = resData[0][0]
             const orderInfo = resData[1]
             console.log('itemInfo', itemInfo)
@@ -34,30 +39,56 @@ export class RaribleBuyNow extends HTMLElement {
 
             const style = document.createElement('style')
             style.textContent = this.renderStyle()
-            shadow.appendChild(style);
+            shadow.appendChild(style)
 
             const template = document.createElement('template')
             template.innerHTML = this.renderHtml(orderInfo, itemInfo)
             shadow.appendChild(template.content.cloneNode(true))
 
+            // owner info
+            const ownerSpan = shadow.querySelector(`#modal-${orderInfo.id}-owner`)
+            ownerSpan.innerHTML = `<a href="" target="_blank"><strong>${itemInfo.item.ownership.owner}</strong></a>`
+            api.getProfiles([itemInfo.item.ownership.owner]).then((resProfile) => {
+                const ownerProfile = resProfile.data[0]
+                ownerSpan.innerHTML = `<a href="${RaribleConstant.URL_BASE}/${ownerProfile.shortUrl}?tab=onsale" target="_blank"><strong>${ownerProfile.name}</strong></a>`
+            })
 
             // ADD EVENTS
-            const processBtn = shadow.querySelector(`#btn-process-${orderInfo.id}`);
-            const modal = shadow.querySelector(`#modal-${orderInfo.id}`);
-            const buyNowBtn = shadow.querySelector(`#rarible-btn-buy-${orderInfo.id}`);
-            const closeBtn = shadow.querySelector(".rarible-modal-close");
+            const processBtn = shadow.querySelector(`#btn-process-${orderInfo.id}`)
+            const modal = shadow.querySelector(`#modal-${orderInfo.id}`)
+            const buyNowBtn = shadow.querySelector(`#rarible-btn-buy-${orderInfo.id}`)
+            const closeBtn = shadow.querySelector('.rarible-modal-close')
             const cancelBtn = shadow.querySelector('.rarible-btn-cancel')
 
-            closeBtn.addEventListener("click", function () {
+            closeBtn.addEventListener('click', function () {
                 modal.setAttribute('style', `display: none;`)
             })
-            cancelBtn.addEventListener("click", function () {
+            cancelBtn.addEventListener('click', function () {
                 modal.setAttribute('style', `display: none;`)
             })
-            buyNowBtn.addEventListener('click', function () {
+
+            const _this = this
+            buyNowBtn.addEventListener('click', async function () {
                 modal.setAttribute('style', `display: block;`)
+
+                // init web3 for connecting to meta mask
+                const provider = (window as any).ethereum
+                await provider.enable()
+                _this.web3 = new Web3(provider)
+                console.log('provider', provider)
+
+                _this.web3.eth.getAccounts((error, result) => {
+                    _this.buyerAddress = result[0]
+                    _this.web3.eth.getBalance(_this.buyerAddress, function (error, rsBalance) {
+                        if (!error) {
+                            console.log('rsBalance', _this.buyerAddress + ': ' + rsBalance)
+                            const balanceSpan = shadow.querySelector(`#modal-${orderInfo.id}-balance`)
+                            balanceSpan.textContent = rsBalance
+                        }
+                    })
+                })
             })
-            window.addEventListener("click", function (event) {
+            window.addEventListener('click', function (event) {
                 if (event.target == modal) {
                     //modal.style.display = "none";
                     modal.setAttribute('style', `display: none;`)
@@ -65,53 +96,43 @@ export class RaribleBuyNow extends HTMLElement {
             })
 
             processBtn.addEventListener('click', async function () {
-                // init web3 for connecting to meta mask
-                const provider = (window as any).ethereum
-                await provider.enable()
-                const web3 = new Web3(provider)
-                console.log('provider', provider)
+                if (_this.buyerAddress) {
+                    // prepare transaction
+                    api.prepareTransaction(orderInfo.id, _this.buyerAddress, 1).then((resPreparedTx: any) => {
+                        const preparedTx = resPreparedTx.data
+                        const tx = {
+                            from: _this.buyerAddress,
+                            data: preparedTx.transaction.data,
+                            to: preparedTx.transaction.to,
+                            value: preparedTx.asset.value
+                        }
 
-                web3.eth.getAccounts((error, result) => {
-                    if (error) {
-                        console.log(error);
-                    } else {
-                        console.log(result);
-                        const buyerAddr = result[0]
-
-                        // prepare transaction
-                        api.prepareTransaction(orderInfo.id, buyerAddr, 1).then((resPreparedTx: any) => {
-                            const preparedTx = resPreparedTx.data
-                            const tx = {
-                                from: buyerAddr,
-                                data: preparedTx.transaction.data,
-                                to: preparedTx.transaction.to,
-                                value: preparedTx.asset.value
-                            }
-
-                            console.log("sending tx", tx);
-                            // web3.eth.sendTransaction(tx)
-                        })
-                    }
-                });
+                        console.log('sending tx', tx)
+                        // web3.eth.sendTransaction(tx)
+                    })
+                }
             })
-        });
+        })
     }
 
     private renderHtml(orderInfo: any, itemInfo: any) {
-        return `<button id="rarible-btn-buy-${orderInfo.id}">Buy Now</button>
+        // prettier-ignore
+        // const buyNowText = `Buy for ${orderInfo.sellPriceEth} ${orderInfo.takeCurrency.symbol}`
+        const buyNowText = `Buy Now`
+        return `<button class="rarible-btn-buy" id="rarible-btn-buy-${orderInfo.id}">${buyNowText}</button>
         <div id="modal-${orderInfo.id}" class="rarible-modal">
             <div class="rarible-modal-content">
                 <span class="rarible-modal-close">&times;</span>
 
                 <div style="padding: 15px 0px;font-size: 28px;"><strong>Checkout</strong></div>
                 
-                <div style="margin-top: 10px">
+                <div style="margin-top: 10px;">
                     You are about to purchase <span><strong>${itemInfo.properties.name}</strong></span>
-                    from <span><a href="${this.url}/${itemInfo.item.ownership.owner}?tab=onsale" target="_blank"><strong>${itemInfo.item.ownership.owner}</strong></a></span>
+                    from <span id="modal-${orderInfo.id}-owner"></span>
                 </div>
 
                 <div style="margin-top: 15px">
-                    <div>
+                    <div style="display: ${itemInfo.item.totalStock == 1 ? 'none' : 'unset'}">
                         <input type="text" placeholder="qty" value="1" />
                         <div class="input-hint">Enter quantity. ${itemInfo.item.totalStock - 1} available</div>
                     </div>
@@ -124,7 +145,7 @@ export class RaribleBuyNow extends HTMLElement {
                 <div style="margin-top: 15px">
                     <div style="display: flex; justify-content: space-between;">
                         <span>Your balance</span>
-                        <span><strong>0 ETH</strong></span>
+                        <span><strong><span id="modal-${orderInfo.id}-balance">0</span> ETH</strong></span>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
                         <span>Service fee</span>
@@ -150,6 +171,19 @@ export class RaribleBuyNow extends HTMLElement {
 
     private renderStyle() {
         return `
+        .rarible-btn-buy {
+            border: none;
+            border-color: rgb(0, 102, 255);
+            border-radius: 48px;
+            color: rgb(255, 255, 255);
+            background: rgba(0, 102, 255, 0.9);
+            min-width: 100px;
+            min-height: 32px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0px 15px 0px 15px;
+        }
+
         /* The Modal (background) */
         .rarible-modal {
             display: none; /* Hidden by default */
@@ -165,9 +199,6 @@ export class RaribleBuyNow extends HTMLElement {
             background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
         }
         
-
-        
-
         /* Modal Content */
         .rarible-modal-content {
             background-color: #fefefe;
@@ -175,11 +206,12 @@ export class RaribleBuyNow extends HTMLElement {
             padding: 20px;
             border: 1px solid #888;
             //width: 80%;
-            width: 380px;
+            width: 350px;
             border-radius: 16px;
             color: rgb(128, 128, 128);
             line-height: 22px;
             font-weight: 600;
+            font-size: 14px;
         }
 
         /* The Close Button */
