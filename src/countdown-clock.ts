@@ -47,7 +47,6 @@ export class CountdownClock {
             if (t.total <= 0) {
                 element.setAttribute('style', `display: none;`)
                 clearInterval(timeinterval);
-
             }
             else {
                 if (t.days > 0) {

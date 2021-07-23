@@ -1,6 +1,6 @@
 {
-  "name": "rarible-embedded-nft",
-  "version": "1.0.0",
+  "name": "rarible-embeds",
+  "version": "0.1.0",
   "description": "",
   "main": "src/index.js",
   "scripts": {
@@ -11,17 +11,20 @@
     "url": "git+https://github.com/kryptopoo/rarible-embeds.git"
   },
   "keywords": [
-    "rarible"
+    "rarible",
+    "nft"
   ],
-  "author": "Tristan Dinh",
+  "author": "kryptopoo",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/kryptopoo/rarible-embeds/issues"
   },
   "homepage": "https://github.com/kryptopoo/rarible-embeds#readme",
   "dependencies": {
+    "@types/web3": "^1.2.2",
     "axios": "^0.21.1",
-    "easyqrcodejs": "^4.4.3"
+    "easyqrcodejs": "^4.4.3",
+    "web3": "^1.2.2"
   },
   "devDependencies": {
     "ts-loader": "^9.2.3",

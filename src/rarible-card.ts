@@ -1,5 +1,6 @@
 import { RaribleApi } from "./rarible-api";
 import { CountdownClock } from "./countdown-clock";
+import { roundPrice } from "./utils";
 
 export class RaribleCard extends HTMLElement {
     private rendered = false;
@@ -33,15 +34,16 @@ export class RaribleCard extends HTMLElement {
 
             let auctionIds = [`${cardInfo.id}:${cardInfo.owners[0].id}`]
             console.log('auctionIds', auctionIds)
-            api.getAuctionsByIds(auctionIds).then(res => {
+            api.getAuctionsByIds(auctionIds).then((res: any) => {
                 console.log('getAuctionsByIds', res)
                 if (res.data.length > 0) {
                     const auctionInfo = res.data[0].auction
                     console.log('auctionInfo', auctionInfo)
-
-                    const countdownClockDiv = shadow.querySelector(`#card-${cardInfo.id.replace(':', '-')}-countdown`);
                     const deadline = new Date(auctionInfo.endDate)
-                    new CountdownClock().initializeClock(countdownClockDiv, deadline)
+                    if (deadline > new Date()) {
+                        const countdownClockDiv = shadow.querySelector(`#card-${cardInfo.id.replace(':', '-')}-countdown`);
+                        new CountdownClock().initializeClock(countdownClockDiv, deadline)
+                    }
                 }
             })
         });
@@ -54,16 +56,12 @@ export class RaribleCard extends HTMLElement {
         }
     }
 
-    private roundPrice(num: number) {
-        return Math.round((num + Number.EPSILON) * 1000) / 1000
-    }
-
     private renderHtml(cardInfo: any, marketInfo: any) {
         //// price html
         let priceHtml = `
         <span>${(marketInfo.stock > 1) ? `<span style="margin-right: 4px">From</span>` : ``}
             <span style="color: rgb(4, 4, 5); margin-right: 4px;">
-                ${this.roundPrice(marketInfo.lowestFixedPrice.priceEth)} ETH 
+                ${roundPrice(marketInfo.lowestFixedPrice.priceEth)} ETH 
             </span>
             ${marketInfo.stock}/${cardInfo.totalSupply}
         </span>`
@@ -78,7 +76,7 @@ export class RaribleCard extends HTMLElement {
         }
 
         //// bid html
-        let bidHtml = `Bid ${this.roundPrice(marketInfo.highestBid.priceEth)} ${marketInfo.highestBid.currency}`
+        let bidHtml = `Bid ${roundPrice(marketInfo.highestBid.priceEth)} ${marketInfo.highestBid.currency}`
         // in case of No Offers
         if (marketInfo.highestBid.price == 0) {
             bidHtml = 'Place a bid'

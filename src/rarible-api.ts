@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 
 export class RaribleApi {
   private protocolUrl = "https://api.rarible.com/protocol/v0.1"
@@ -9,6 +9,7 @@ export class RaribleApi {
   constructor() {
   }
 
+  // PROTOCOL APIS
   public getItemById(itemId: string) {
     let url = `${this.protocolUrl}/ethereum/nft/items/${itemId}`
     return axios.get(url);
@@ -19,14 +20,15 @@ export class RaribleApi {
     return axios.get(url);
   }
 
-  public getOwnershipsByItem(itemId: string) {
-    let url = `${this.marketplaceUrl}/items/${itemId}/ownerships`
-    return axios.get(url);
-  }
-
+  // MARKETPLACE APIS
   public getProfiles(addresses: string[]) {
     let url = `${this.marketplaceUrl}/profiles/list`
     return axios.post(url, addresses);
+  }
+
+  public getOwnershipsByItem(itemId: string) {
+    let url = `${this.marketplaceUrl}/items/${itemId}/ownerships`
+    return axios.get(url);
   }
 
   public getAuctionsByIds(ids: string[]) {
@@ -35,8 +37,8 @@ export class RaribleApi {
   }
 
   public getOfferssByItem(itemId: string) {
-    let url = `${this.marketplaceUrl}/items/${itemId}/offers`;
-    return axios.get(url);
+    let url = `${this.marketplaceUrl}/items/${itemId}/offers`
+    return axios.get(url)
   }
 
   public getCardInfo = (itemId: string): Promise<any> => {
@@ -106,6 +108,7 @@ export class RaribleApi {
     });
   };
 
+  // marketplace
   public getMarketInfo = (itemId: string): Promise<any> => {
     return new Promise((resolve, reject) => {
       axios
@@ -176,4 +179,38 @@ export class RaribleApi {
         });
     });
   };
+
+  public getOrderByOwnership(ownershipId: string) {
+    // https://api-mainnet.rarible.com/marketplace/api/v2/ownerships/0xd07dc4262bcdbf85190c01c996b4c06a461d2430%3A485193%3A0xfcfb72b3b33e2c1628ef991e1c9295fd44551009/order
+    let url = `${this.marketplaceUrl}/ownerships/${ownershipId}/order`
+    return axios.get(url)
+  }
+
+  public prepareTransaction(orderId: string, marker: string, amount: number) {
+    //https://api-mainnet.rarible.com/marketplace/api/v2/orders/0x48af7aa29c7d38141de0e9b3892ff0d090314a9e5849d85340ca73a4fca34552/prepareTransaction
+    let url = `${this.marketplaceUrl}/orders/${orderId}/prepareTransaction`
+    return axios.post(url, { maker: marker, amount: amount })
+  }
+
+  public getMarketMappingItems(itemIds: string[]) {
+    // https://api-mainnet.rarible.com/marketplace/api/v2/items/map
+    let url = `${this.marketplaceUrl}/items/map`
+    return axios.post(url, itemIds)
+  }
+
+  // get multiple requests
+  public getAll = (values: (AxiosResponse | Promise<AxiosResponse>)[]): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      axios
+        .all(values)
+        .then(
+          axios.spread((...responses) => {
+            resolve(responses.map(res => res.data));
+          })
+        )
+        .catch((error) => {
+          reject(error);
+        });
+    })
+  }
 }

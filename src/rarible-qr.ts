@@ -17,7 +17,6 @@ export class RaribleQr extends HTMLElement {
     }
 
     public render() {
-        console.log('render qr')
         let itemId = this.getAttribute("itemId");
         let api: RaribleApi = new RaribleApi();
         api.getCardInfo(itemId).then((cardInfo) => {
@@ -53,6 +52,10 @@ export class RaribleQr extends HTMLElement {
                 dotScaleA: 0.5, // Dafault for alignment block, must be greater than 0, less than or equal to 1. default is 1
                 // dotScaleAO: undefined, // For alignment outer block, must be greater than 0, less than or equal to 1. default is 1
                 // dotScaleAI: undefined, // For alignment inner block, must be greater than 0, less than or equal to 1. default is 1
+
+                // title: `${cardInfo.name}`, // content 
+                // titleHeight: 40, // height, including subTitle. default is 0
+                // titleTop: 30, // draws y coordinates. default is 30
             };
             new QRCode(qrDiv, options);
         });
