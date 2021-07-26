@@ -1,10 +1,11 @@
 import { RaribleApi } from './rarible-api'
 import { CountdownClock } from './countdown-clock'
 import { roundPrice } from './utils'
-import { RaribleConstant } from './constants'
+import { Config } from './config'
 
 export class RaribleCard extends HTMLElement {
     private rendered = false
+    private config: Config
 
     constructor() {
         super()
@@ -12,11 +13,9 @@ export class RaribleCard extends HTMLElement {
 
     public render() {
         const itemId = this.getAttribute('itemId')
-        const protocolApiUrl = this.getAttribute('protocolApiUrl')
-        const marketplaceApiUrl = this.getAttribute('marketplaceApiUrl')
         const showBuyNow = this.getAttribute('showBuyNow') === 'true'
-
-        const api: RaribleApi = new RaribleApi(protocolApiUrl, marketplaceApiUrl)
+        this.config = new Config(this.getAttribute('env'))
+        const api: RaribleApi = new RaribleApi(this.config.ProtocolApiUrl, this.config.MarketplaceApiUrl)
         api.getMarketMappingItems([itemId]).then((res) => {
             const itemInfo = res.data[0]
             console.log('itemInfo', itemInfo)
@@ -41,29 +40,26 @@ export class RaribleCard extends HTMLElement {
                 const collectionProfiles = resProfileData[0].map((c: any) => ({
                     id: c.id,
                     name: c.name,
-                    image: c.image
-                        ? c.image.indexOf('ipfs') > -1
-                            ? c.image.replace('ipfs:/', RaribleConstant.URL_IPFS)
-                            : `${RaribleConstant.URL_IPFS}/ipfs/${c.image}`
-                        : RaribleConstant.URL_DEFAULT_AVATAR,
+                    image: this.config.getAvatarUrl(c.image),
                     shortUrl: c.shortUrl,
                     verified: c.badges.indexOf('VERIFIED') > -1
                 }))
                 const creatorProfiles = resProfileData[1].map((c: any) => ({
                     id: c.id,
                     name: c.name,
-                    image: c.image ? c.image.replace('ipfs:/', RaribleConstant.URL_IPFS) : RaribleConstant.URL_DEFAULT_AVATAR,
+                    image: this.config.getAvatarUrl(c.image),
                     shortUrl: c.shortUrl,
                     verified: c.badges.indexOf('VERIFIED') > -1
                 }))
                 const ownerProfiles = resProfileData[2].map((c: any) => ({
                     id: c.id,
                     name: c.name,
-                    image: c.image ? c.image.replace('ipfs:/', RaribleConstant.URL_IPFS) : RaribleConstant.URL_DEFAULT_AVATAR,
+                    image: this.config.getAvatarUrl(c.image),
                     shortUrl: c.shortUrl,
                     verified: c.badges.indexOf('VERIFIED') > -1
                 }))
 
+                console.log('avatars', collectionProfiles[0], creatorProfiles[0], ownerProfiles[0])
                 const avatarDiv = shadow.querySelector(`#card-${itemInfo.id.replace(':', '-')}-avatar`)
                 avatarDiv.innerHTML = this.renderAvatarHtml(collectionProfiles[0], creatorProfiles[0], ownerProfiles[0])
             })
@@ -71,9 +67,7 @@ export class RaribleCard extends HTMLElement {
             // in case of auction
             if (isAuction) {
                 const auctionIds = [`${itemInfo.item.ownership.id}`]
-                console.log('auctionIds', auctionIds)
                 api.getAuctionsByIds(auctionIds).then((res: any) => {
-                    console.log('getAuctionsByIds', res)
                     if (res.data.length > 0) {
                         const auctionInfo = res.data[0].auction
                         console.log('auctionInfo', auctionInfo)
@@ -88,7 +82,7 @@ export class RaribleCard extends HTMLElement {
                 // buy now button
                 if (showBuyNow) {
                     const bidDiv = shadow.querySelector(`#card-${itemInfo.id.replace(':', '-')}-bid`)
-                    bidDiv.innerHTML = `<rarible-buy-now ownershipId="${itemInfo.item.ownership.id}" />`
+                    bidDiv.innerHTML = `<rarible-buy-now ownershipId="${itemInfo.item.ownership.id}" ${this.config.IsDevEnvironment ? ' env="dev" ' : ''} />`
                 }
             }
         })
@@ -137,6 +131,8 @@ export class RaribleCard extends HTMLElement {
         }
 
         const cardId = `card-${itemInfo.id.replace(':', '-')}`
+
+        // prettier-ignore
         const html = `
         <div class="rarible-card" id="${cardId}">
             <div class="rarible-card-border">
@@ -148,21 +144,21 @@ export class RaribleCard extends HTMLElement {
                     </div>
                     <div class="rarible-card-image">
                         <div>
-                            <a href="${RaribleConstant.URL_BASE}/token/${itemInfo.id}" target="_blank">
-                                <image src="${itemInfo.properties.imagePreview}"></image>
+                            <a href="${this.config.getItemUrl(itemInfo.id)}" target="_blank">
+                                <image src="${this.config.getImageUrl(itemInfo.properties.imagePreview ?? itemInfo.properties.image)}" title="${itemInfo.properties.name}"></image>
                             </a>
                             <div id="${cardId}-countdown"></div>
                         </div>
                     </div>
                     <div class="rarible-card-name">
-                        <a href="${RaribleConstant.URL_BASE}/token/${itemInfo.id}" target="_blank">
+                        <a href="${this.config.getItemUrl(itemInfo.id)}" target="_blank">
                             <span style="color: rgba(4, 4, 5, 0.9)">${itemInfo.properties.name}</span>
                         </a>
                     </div>
                     <div style="margin-top: 10px; font-size: 13px; color: rgb(128, 128, 128);">${priceHtml}</div>
                     <div style="margin-top: 7px; ; font-size: 13px; display: flex; align-items: center;">
                         <div class="rarible-card-bid" id="${cardId}-bid">
-                            <a href="${RaribleConstant.URL_BASE}/token/${itemInfo.id}" target="_blank">
+                            <a href="${this.config.getItemUrl(itemInfo.id)}" target="_blank">
                                 ${bidHtml}
                             </a>
                         </div>
@@ -189,8 +185,8 @@ export class RaribleCard extends HTMLElement {
         if (collectionProfile) {
             // prettier-ignore
             avatarHtml += `
-                <a href="${RaribleConstant.URL_BASE}/collection/${collectionProfile.shortUrl ? collectionProfile.shortUrl : collectionProfile.id}?tab=onsale" target="_blank">
-                    <div class="avatar"><img title="Collection: ${collectionProfile.name}" src="${RaribleConstant.URL_IMAGES}/?fit=outsize&n=-1&url=${collectionProfile.image}&w=30"></img></div>
+                <a href="${this.config.getCollectionUrl(collectionProfile.shortUrl, collectionProfile.id)}" target="_blank">
+                    <div class="avatar"><img title="Collection: ${collectionProfile.name}" src="${this.config.getAvatarUrl(collectionProfile.image)}"></img></div>
                 </a>
             `
         }
@@ -198,10 +194,10 @@ export class RaribleCard extends HTMLElement {
         if (ownerProfile) {
             // prettier-ignore
             avatarHtml += `
-                <a href="${RaribleConstant.URL_BASE}/${ownerProfile.shortUrl}?tab=onsale" target="_blank">
+                <a href="${this.config.getUserUrl(ownerProfile.shortUrl, ownerProfile.id)}" target="_blank">
                     <div class="avatar">
                         ${ownerProfile.verified ? verifiedBadgeHtml : ''}
-                        <img title="Owner: ${ownerProfile.name ? ownerProfile.name : ownerProfile.id}" src="${RaribleConstant.URL_IMAGES}/?fit=outsize&n=-1&url=${ownerProfile.image}&w=30"></img>
+                        <img title="Owner: ${ownerProfile.name ?? ownerProfile.id}" src="${this.config.getAvatarUrl(ownerProfile.image)}"></img>
                     </div>
                 </a>
             `
@@ -209,10 +205,10 @@ export class RaribleCard extends HTMLElement {
 
         if (creatorProfile) {
             avatarHtml += `
-            <a href="${RaribleConstant.URL_BASE}/${creatorProfile.shortUrl}?tab=onsale" target="_blank">
+            <a href="${this.config.getUserUrl(creatorProfile.shortUrl, creatorProfile.id)}" target="_blank">
                 <div class="avatar">
                     ${creatorProfile.verified ? verifiedBadgeHtml : ''}
-                    <img title="Creator: ${creatorProfile.name}" src="${RaribleConstant.URL_IMAGES}/?fit=outsize&n=-1&url=${creatorProfile.image}&w=30"></img>
+                    <img title="Creator: ${creatorProfile.name ?? creatorProfile.id}" src="${this.config.getAvatarUrl(creatorProfile.image)}"></img>
                 </div>
             </a>`
         }
@@ -234,7 +230,8 @@ export class RaribleCard extends HTMLElement {
             display: inline-block;
             position: relative;
             padding: 20px;
-            border-radius: 16px; border: 1px solid rgb(230, 230, 230); 
+            border-radius: 16px; 
+            border: 1px solid rgb(230, 230, 230); 
             width: 230px;
             height: 360px;
             background-color: white;

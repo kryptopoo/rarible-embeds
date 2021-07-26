@@ -1,13 +1,12 @@
 import axios, { AxiosResponse } from 'axios'
-import { RaribleConstant } from './constants'
 
 export class RaribleApi {
     private protocolUrl: string
     private marketplaceUrl: string
 
     constructor(protocolApiUrl: string, marketplaceApiUrl: string) {
-        this.protocolUrl = protocolApiUrl ? protocolApiUrl : RaribleConstant.URL_PROTOCOL_API
-        this.marketplaceUrl = marketplaceApiUrl ? marketplaceApiUrl : RaribleConstant.URL_MARKETPLACE_API
+        this.protocolUrl = protocolApiUrl
+        this.marketplaceUrl = marketplaceApiUrl
     }
 
     // PROTOCOL APIS

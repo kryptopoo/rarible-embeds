@@ -8,11 +8,14 @@
         function generateNFTCard() {
             var raribleCard = document.createElement('rarible-card');
             raribleCard.setAttribute('itemId', document.getElementById("item-id").value)
+            raribleCard.setAttribute('showBuyNow', 'true')
+            if (document.getElementById("chkDevEnv").checked) raribleCard.setAttribute('env', 'dev')
             document.getElementById("embeds").appendChild(raribleCard)
         }
         function generateQRCode() {
             var raribleQr = document.createElement('rarible-qr');
             raribleQr.setAttribute('itemId', document.getElementById("item-id").value)
+            if (document.getElementById("chkDevEnv").checked) raribleQr.setAttribute('env', 'dev')
             document.getElementById("embeds").appendChild(raribleQr)
         }
     </script>
@@ -27,12 +30,12 @@
         input {
             font-size: larger;
             margin: 3px;
-            min-height: 32px;
             cursor: pointer;
         }
 
         input[type="text"] {
             min-width: 600px;
+            min-height: 32px;
         }
 
         input[type="button"] {
@@ -44,11 +47,14 @@
 <body>
     <div>
         <h1>Rarible Embeds</h1>
+        <div><input type="checkbox" id="chkDevEnv" checked >Dev Environment (<a href="https://ropsten.rarible.com/" target="_blank">ropsten</a>)</input></div>
         <div>
             <input type="text" id="item-id" placeholder="item id"
-                value="0x60f80121c31a0d46b5279700f9df786054aa5ee5:1137205" />
+                value="0x71b053bcaf286ba20d9006845412d4532a8e1f34:10669" />
         </div>
+        
         <div>
+            
             <input type="button" value="NFT Card" onclick="generateNFTCard()" />
             <input type="button" value="QR Code" onclick="generateQRCode()" />
         </div>

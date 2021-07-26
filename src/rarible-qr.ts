@@ -1,9 +1,10 @@
-import { RaribleConstant } from './constants'
+import { Config } from './config'
 import { RaribleApi } from './rarible-api'
 const QRCode = require('easyqrcodejs')
 
 export class RaribleQr extends HTMLElement {
     private rendered = false
+    private config: Config
 
     constructor() {
         super()
@@ -18,12 +19,12 @@ export class RaribleQr extends HTMLElement {
 
     public render() {
         const itemId = this.getAttribute('itemId')
-        const protocolApiUrl = this.getAttribute('protocolApiUrl')
-        const marketplaceApiUrl = this.getAttribute('marketplaceApiUrl')
+        this.config = new Config(this.getAttribute('env'))
 
-        const api: RaribleApi = new RaribleApi(protocolApiUrl, marketplaceApiUrl)
+        const api: RaribleApi = new RaribleApi(this.config.ProtocolApiUrl, this.config.MarketplaceApiUrl)
         api.getItemMetaById(itemId).then((res) => {
             const itemMetaData = res.data
+            console.log('itemMetaData', itemMetaData)
             const shadow = this.attachShadow({ mode: 'open' })
 
             const qrId = `qr-${itemId.replace(':', '-')}`
@@ -35,7 +36,7 @@ export class RaribleQr extends HTMLElement {
             // Create QRCode Object
             const qrDiv = shadow.querySelector(`#${qrId}`)
             const options = {
-                text: `${RaribleConstant.URL_BASE}/token/${itemId}`,
+                text: `${this.config.getItemUrl(itemId)}`,
                 width: 256,
                 height: 256,
                 colorDark: '#000000',
@@ -43,7 +44,7 @@ export class RaribleQr extends HTMLElement {
                 correctLevel: QRCode.CorrectLevel.H, // L, M, Q, H
 
                 // ====== backgroundImage
-                backgroundImage: itemMetaData.image.url.PREVIEW, // Background Image
+                backgroundImage: this.config.getImageUrl(itemMetaData.image.url.PREVIEW ?? itemMetaData.image.url.ORIGINAL), // Background Image
                 backgroundImageAlpha: 1, // Background image transparency, value between 0 and 1. default is 1.
                 autoColor: true, // Automatic color adjustment(for data block)
                 autoColorDark: 'rgba(0, 0, 0, .6)', // Automatic color: dark CSS color
