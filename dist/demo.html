@@ -8,14 +8,20 @@
         function generateNFTCard() {
             var raribleCard = document.createElement('rarible-card');
             raribleCard.setAttribute('itemId', document.getElementById("item-id").value)
+            raribleCard.setAttribute('env', document.getElementById("env-select").value)
+            document.getElementById("embeds").appendChild(raribleCard)
+        }
+        function generateNFTCardBuyNow() {
+            var raribleCard = document.createElement('rarible-card');
+            raribleCard.setAttribute('itemId', document.getElementById("item-id").value)
             raribleCard.setAttribute('showBuyNow', 'true')
-            if (document.getElementById("chkDevEnv").checked) raribleCard.setAttribute('env', 'dev')
+            raribleCard.setAttribute('env', document.getElementById("env-select").value)
             document.getElementById("embeds").appendChild(raribleCard)
         }
         function generateQRCode() {
             var raribleQr = document.createElement('rarible-qr');
             raribleQr.setAttribute('itemId', document.getElementById("item-id").value)
-            if (document.getElementById("chkDevEnv").checked) raribleQr.setAttribute('env', 'dev')
+            raribleQr.setAttribute('env', document.getElementById("env-select").value)
             document.getElementById("embeds").appendChild(raribleQr)
         }
     </script>
@@ -27,10 +33,15 @@
             text-align: center;
         }
 
-        input {
-            font-size: larger;
+        input,
+        select {
             margin: 3px;
             cursor: pointer;
+        }
+
+        input {
+            font-size: larger;
+
         }
 
         input[type="text"] {
@@ -41,21 +52,32 @@
         input[type="button"] {
             min-width: 150px;
         }
+
+        select {
+            min-width: 200px;
+            min-height: 32px;
+        }
     </style>
 </head>
 
 <body>
     <div>
         <h1>Rarible Embeds</h1>
-        <div><input type="checkbox" id="chkDevEnv" checked >Dev Environment (<a href="https://ropsten.rarible.com/" target="_blank">ropsten</a>)</input></div>
         <div>
-            <input type="text" id="item-id" placeholder="item id"
-                value="0x71b053bcaf286ba20d9006845412d4532a8e1f34:10669" />
+            <select id="env-select">
+                <option value="production">Production (rarible.com)</option>
+                <option value="staging">Staging (rinkeby.rarible.com)</option>
+                <option value="dev" selected>Dev (ropsten.rarible.com)</option>
+            </select>
         </div>
-        
         <div>
-            
+            <input type="text" id="tem-id" placeholder="Item id" value="" />
+        </div>
+
+        <div>
+
             <input type="button" value="NFT Card" onclick="generateNFTCard()" />
+            <input type="button" value="NFT Card - Buy Now" onclick="generateNFTCardBuyNow()" />
             <input type="button" value="QR Code" onclick="generateQRCode()" />
         </div>
         <div id="embeds"></div>

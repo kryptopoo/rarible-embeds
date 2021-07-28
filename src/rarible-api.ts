@@ -21,6 +21,11 @@ export class RaribleApi {
     }
 
     // MARKETPLACE APIS
+    public getCurrencies() {
+        let url = `${this.marketplaceUrl}/currencies`
+        return axios.get(url)
+    }
+
     public getProfiles(addresses: string[]) {
         let url = `${this.marketplaceUrl}/profiles/list`
         return axios.post(url, addresses)

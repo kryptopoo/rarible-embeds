@@ -5,17 +5,25 @@ export class Config {
     DefaultAvatarUrl = 'https://ipfs.rarible.com/ipfs/QmfNA7QWXzSp5G7qwkR9DxR225AGbtxjtfGDKrX2s9TV2N'
     ProtocolApiUrl = 'https://api.rarible.com/protocol/v0.1'
     MarketplaceApiUrl = 'https://api-mainnet.rarible.com/marketplace/api/v2'
-    IsDevEnvironment = false
+    Environment = 'production'
 
     constructor(env: string) {
-        this.IsDevEnvironment = env && env.toLowerCase() === 'dev'
-        if (this.IsDevEnvironment) {
+        this.Environment = env ?? 'production'
+        if (this.Environment.toLowerCase() === 'dev') {
             this.HomepageUrl = 'https://ropsten.rarible.com'
             this.ImagesUrl = ''
             this.IpfsUrl = 'https://ipfs.rarible.com'
             this.DefaultAvatarUrl = 'https://ipfs.rarible.com/ipfs/QmfNA7QWXzSp5G7qwkR9DxR225AGbtxjtfGDKrX2s9TV2N'
             this.ProtocolApiUrl = 'https://api-dev.rarible.com/protocol/v0.1'
             this.MarketplaceApiUrl = 'https://api-ropsten.rarible.com/marketplace/api/v3'
+        }
+        if (this.Environment.toLowerCase() === 'staging') {
+            this.HomepageUrl = 'https://rinkeby.rarible.com'
+            this.ImagesUrl = ''
+            this.IpfsUrl = 'https://ipfs.rarible.com'
+            this.DefaultAvatarUrl = 'https://ipfs.rarible.com/ipfs/QmfNA7QWXzSp5G7qwkR9DxR225AGbtxjtfGDKrX2s9TV2N'
+            this.ProtocolApiUrl = 'https://rinkeby.rarible.com/protocol/v0.1'
+            this.MarketplaceApiUrl = 'https://rinkeby.rarible.com/marketplace/api/v3'
         }
     }
 
@@ -48,6 +56,12 @@ export class Config {
     }
 
     public getEtherscanUrl = (hash: string) => {
-        return this.IsDevEnvironment ? `https://ropsten.etherscan.io/tx/${hash}` : `https://etherscan.io/tx/${hash}`
+        if (this.Environment.toLowerCase() === 'dev') {
+            return `https://ropsten.etherscan.io/tx/${hash}`
+        }
+        if (this.Environment.toLowerCase() === 'dev') {
+            return `https://rinkeby.etherscan.io/tx/${hash}`
+        }
+        return `https://etherscan.io/tx/${hash}`
     }
 }

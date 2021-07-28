@@ -1,11 +1,13 @@
 import { RaribleApi } from './rarible-api'
 import { CountdownClock } from './countdown-clock'
-import { roundPrice } from './utils'
+import { roundPrice, decorateCurrency } from './utils'
 import { Config } from './config'
+import { RaribleConstant } from './constants'
 
 export class RaribleCard extends HTMLElement {
     private rendered = false
     private config: Config
+    private api: RaribleApi
 
     constructor() {
         super()
@@ -15,11 +17,11 @@ export class RaribleCard extends HTMLElement {
         const itemId = this.getAttribute('itemId')
         const showBuyNow = this.getAttribute('showBuyNow') === 'true'
         this.config = new Config(this.getAttribute('env'))
-        const api: RaribleApi = new RaribleApi(this.config.ProtocolApiUrl, this.config.MarketplaceApiUrl)
-        api.getMarketMappingItems([itemId]).then((res) => {
+        this.api = new RaribleApi(this.config.ProtocolApiUrl, this.config.MarketplaceApiUrl)
+        this.api.getMarketMappingItems([itemId]).then((res) => {
             const itemInfo = res.data[0]
             console.log('itemInfo', itemInfo)
-            const isAuction = itemInfo.item.ownership.status == 'AUCTION'
+            const isAuction = itemInfo.item.ownership && itemInfo.item.ownership.status == 'AUCTION'
 
             const shadow = this.attachShadow({ mode: 'open' })
 
@@ -36,7 +38,7 @@ export class RaribleCard extends HTMLElement {
             let collections = [itemInfo.item.token]
             let owners = itemInfo.item.owners
             let creators = [itemInfo.item.creator]
-            api.getAll([api.getProfiles(collections), api.getProfiles(creators), api.getProfiles(owners)]).then((resProfileData) => {
+            this.api.getAll([this.api.getProfiles(collections), this.api.getProfiles(creators), this.api.getProfiles(owners)]).then((resProfileData) => {
                 const collectionProfiles = resProfileData[0].map((c: any) => ({
                     id: c.id,
                     name: c.name,
@@ -59,15 +61,15 @@ export class RaribleCard extends HTMLElement {
                     verified: c.badges.indexOf('VERIFIED') > -1
                 }))
 
-                console.log('avatars', collectionProfiles[0], creatorProfiles[0], ownerProfiles[0])
+                console.log('avatars', collectionProfiles, creatorProfiles, ownerProfiles)
                 const avatarDiv = shadow.querySelector(`#card-${itemInfo.id.replace(':', '-')}-avatar`)
-                avatarDiv.innerHTML = this.renderAvatarHtml(collectionProfiles[0], creatorProfiles[0], ownerProfiles[0])
+                avatarDiv.innerHTML = this.renderAvatarHtml(collectionProfiles[0], creatorProfiles[0], ownerProfiles.length > 1 ? null : ownerProfiles[0])
             })
 
             // in case of auction
             if (isAuction) {
                 const auctionIds = [`${itemInfo.item.ownership.id}`]
-                api.getAuctionsByIds(auctionIds).then((res: any) => {
+                this.api.getAuctionsByIds(auctionIds).then((res: any) => {
                     if (res.data.length > 0) {
                         const auctionInfo = res.data[0].auction
                         console.log('auctionInfo', auctionInfo)
@@ -76,13 +78,16 @@ export class RaribleCard extends HTMLElement {
                             const countdownClockDiv = shadow.querySelector(`#card-${itemInfo.id.replace(':', '-')}-countdown`)
                             new CountdownClock().initializeClock(countdownClockDiv, deadline)
                         }
+
+                        const bidDiv = shadow.querySelector(`#card-${itemInfo.id.replace(':', '-')}-bid a`)
+                        bidDiv.innerHTML = `${auctionInfo.minPrice} ${decorateCurrency(RaribleConstant.CURRENCY[auctionInfo.currency])}`
                     }
                 })
             } else {
                 // buy now button
-                if (showBuyNow) {
+                if (showBuyNow && itemInfo.item.ownership && itemInfo.item.ownership.status == 'FIXED_PRICE') {
                     const bidDiv = shadow.querySelector(`#card-${itemInfo.id.replace(':', '-')}-bid`)
-                    bidDiv.innerHTML = `<rarible-buy-now ownershipId="${itemInfo.item.ownership.id}" ${this.config.IsDevEnvironment ? ' env="dev" ' : ''} />`
+                    bidDiv.innerHTML = `<rarible-buy-now ownershipId="${itemInfo.item.ownership.id}" env="${this.config.Environment}" } />`
                 }
             }
         })
@@ -105,27 +110,40 @@ export class RaribleCard extends HTMLElement {
 
         // in case of Not For Sale
         if (!ownership) {
-            priceHtml = `<span>Not for sale ${itemInfo.item.totalStock}/${itemInfo.item.supply}</span>`
+            priceHtml = `<span>Not for sale ${itemInfo.item.supply}/${itemInfo.item.supply}</span>`
+            bidHtml = `No bids yet`
         } else {
+            const availableTotalText = `${itemInfo.item.totalStock}/${itemInfo.item.supply}`
+            let price = ownership.priceEth
+            let currency = RaribleConstant.DEFAULT_CURRENCY
+
+            // in case of open for offers
+            if (ownership.status == 'OPEN_FOR_OFFERS') {
+                priceHtml = `Open for bids ${availableTotalText}`
+                bidHtml = 'Place a bid'
+            }
             // in case of buy now
-            if (ownership.status == 'FIXED_PRICE') {
+            else if (ownership.status == 'FIXED_PRICE') {
                 priceHtml = `
                 <span>${ownership.stock > 1 ? `<span style="margin-right: 4px">From</span>` : ``}
                     <span style="color: rgb(4, 4, 5); margin-right: 4px;">
-                        ${roundPrice(ownership.priceEth)} ETH 
+                        ${price >= RaribleConstant.MIN_BID_AMOUNT ? roundPrice(price) : `~${roundPrice(price)}`} ${currency} 
                     </span>
-                    ${itemInfo.item.totalStock}/${itemInfo.item.supply}
+                    ${availableTotalText}
                 </span>`
-                if (offer) {
-                    bidHtml = `Bid ${offer.buyPriceEth >= 0.001 ? roundPrice(offer.buyPriceEth) : '~0.001'} ${offer.makeCurrency.symbol}`
-                }
+                bidHtml = 'Place a bid'
+
+                // if (offer) {
+                //     bidHtml = `Bid ${price >= RaribleConstant.MIN_BID_AMOUNT ? price : `~${RaribleConstant.MIN_BID_AMOUNT}`} ${currency}`
+                // }
             }
             // in case of Auction
             else if (ownership.status == 'AUCTION') {
-                priceHtml = `<span>${offer.buyPriceEth > 0 ? 'Highest bid' : 'Minimum bid'} ${itemInfo.item.totalStock}/${itemInfo.item.supply}</span>`
-
+                priceHtml = `<span>${price > 0 ? 'Highest bid' : 'Minimum bid'} ${availableTotalText}</span>`
                 if (offer) {
-                    bidHtml = `${offer.buyPriceEth >= 0.001 ? roundPrice(offer.buyPriceEth) : '~0.001'} ${offer.makeCurrency.symbol}`
+                    price = offer.buyPriceEth
+                    currency = decorateCurrency(offer.makeCurrency.symbol)
+                    bidHtml = `${price >= RaribleConstant.MIN_BID_AMOUNT ? roundPrice(price) : `~${roundPrice(price)}`} ${currency}`
                 }
             }
         }
@@ -151,7 +169,7 @@ export class RaribleCard extends HTMLElement {
                         </div>
                     </div>
                     <div class="rarible-card-name">
-                        <a href="${this.config.getItemUrl(itemInfo.id)}" target="_blank">
+                        <a href="${this.config.getItemUrl(itemInfo.id)}" target="_blank" title="${itemInfo.properties.name}">
                             <span style="color: rgba(4, 4, 5, 0.9)">${itemInfo.properties.name}</span>
                         </a>
                     </div>
@@ -164,7 +182,7 @@ export class RaribleCard extends HTMLElement {
                         </div>
                         <div class="rarible-card-likes">
                             <span><svg viewBox="0 0 17 16" fill="none" width="16" height="16" xlmns="http://www.w3.org/2000/svg"><path d="M8.2112 14L12.1056 9.69231L14.1853 7.39185C15.2497 6.21455 15.3683 4.46116 14.4723 3.15121V3.15121C13.3207 1.46757 10.9637 1.15351 9.41139 2.47685L8.2112 3.5L6.95566 2.42966C5.40738 1.10976 3.06841 1.3603 1.83482 2.97819V2.97819C0.777858 4.36443 0.885104 6.31329 2.08779 7.57518L8.2112 14Z" stroke="rgba(4, 4, 5, 1)" stroke-width="2"></path></svg></span>
-                            <span style="margin-left: 4px;">${itemInfo.item.likes}</span>
+                            <span style="margin-left: 4px;">${itemInfo.item.likes > 0 ? itemInfo.item.likes : ''}</span>
                         </div>
                     </div>
                 </div>
@@ -256,6 +274,11 @@ export class RaribleCard extends HTMLElement {
         }
         .rarible-card-name {
             margin-top: 20px;
+            width: 220px;
+            overflow: hidden;
+            display: inline-block;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .rarible-card-likes {
             display: flex;

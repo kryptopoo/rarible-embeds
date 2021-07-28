@@ -7,6 +7,12 @@ export const shortAddress = (addr: string) => {
     return `${addr.substr(0, 10)}...${addr.substr(addr.length - 5, 5)} `
 }
 
+export const decorateCurrency = (symbol: string) => {
+    if (symbol === 'WETH') return 'wETH'
+
+    return symbol
+}
+
 export class ShareLinkBuilder {
     public static buildTwitterShareLink = (itemUrl: string, itemName: string) => {
         const text = `I have just purchased ${itemName} collectible!`

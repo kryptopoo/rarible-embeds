@@ -2,7 +2,8 @@ import { RaribleApi } from './rarible-api'
 import { roundPrice, shortAddress, ShareLinkBuilder } from './utils'
 import { Config } from './config'
 import Web3 from 'web3'
-var ConfettiGenerator = require('confetti-js').default
+import { RaribleConstant } from './constants'
+const ConfettiGenerator = require('confetti-js').default
 
 export class RaribleBuyNow extends HTMLElement {
     private rendered = false
@@ -101,9 +102,6 @@ export class RaribleBuyNow extends HTMLElement {
                 await provider.enable()
                 _this.web3 = new Web3(provider)
 
-                console.log('provider', provider)
-                console.log('_this.web3.eth', _this.web3.eth)
-
                 _this.web3.eth.getAccounts((error, result) => {
                     _this.buyerAddress = result[0]
                     _this.web3.eth.getBalance(_this.buyerAddress, function (error, rsBalance) {
@@ -136,83 +134,36 @@ export class RaribleBuyNow extends HTMLElement {
                         }
 
                         console.log('sending tx', tx)
-                        // _this.web3.eth.sendTransaction(tx, function (err: any, transactionHash: any) {
-                        //     if (err) {
-                        //         console.log(err)
-                        //     } else {
-                        //         console.log('transactionHash', transactionHash)
-
-                        //         // confetti effect
-                        //         ConfettiGenerator({ target: confettiElement, width: 380, height: 325 }).render()
-
-                        //         // render result
-                        //         statusSpan.innerHTML = 'Success'
-                        //         console.log('shoraddres', shortAddress(transactionHash))
-                        //         transactionSpan.innerHTML = shortAddress(transactionHash)
-                        //         transactionSpan.setAttribute('href', _this.config.getEtherscanUrl(transactionHash))
-
-                        //         // 0x0428744f4...d358
-                        //         // https://ropsten.etherscan.io/tx/0xeb660d2f3f0792cd80051e61ef29133c8a2439f04b1b7112ceaf2947462943d4
-                        //     }
-                        // })
-
-                        // _this.web3.eth.sendTransaction(tx).then(function (receipt) {
-                        //     // will be fired once the receipt is mined
-                        //     console.log('then receipt', receipt)
-                        //     // confetti effect
-                        //     ConfettiGenerator({ target: confettiElement, width: 380, height: 325 }).render()
-
-                        //     // render result
-                        //     statusSpan.innerHTML = 'Success'
-                        //     // You successfully purchased ${itemInfo.properties.name} from <span class="modal-${orderInfo.id}-owner"></span>
-                        //     progressSpan.innerHTML = `You successfully purchased`
-                        // })
-
                         _this.web3.eth
                             .sendTransaction(tx)
                             .on('transactionHash', function (hash: string) {
                                 statusSpan.innerHTML = 'Processing'
+                                statusSpan.setAttribute('style', `color: rgb(175, 162, 63);`)
+
                                 console.log('shoraddres', shortAddress(hash))
                                 transactionSpan.innerHTML = shortAddress(hash)
                                 transactionSpan.setAttribute('href', _this.config.getEtherscanUrl(hash))
-                            })
-                            .once('receipt', function (receipt) {
-                                console.log('once receipt', receipt)
-                            })
-                            .on('receipt', function (receipt: any) {
-                                console.log('on receipt', receipt)
-                            })
-                            .on('confirmation', function (confirmationNumber: any, receipt: any) {
-                                console.log('confirmation confirmationNumber', confirmationNumber)
-                                console.log('confirmation receipt', receipt)
+
+                                // confetti effect
+                                ConfettiGenerator({ target: confettiElement, width: 380, height: 325 }).render()
                             })
                             .on('error', function (err) {
-                                console.log(err)
+                                console.log('sendTransaction error', err)
 
                                 // render result
                                 statusSpan.innerHTML = 'Fail'
                             })
                             .then(function (receipt) {
                                 // will be fired once the receipt is mined
-                                console.log('then receipt', receipt)
-                                // confetti effect
-                                ConfettiGenerator({ target: confettiElement, width: 380, height: 325 }).render()
+                                console.log('receipt', receipt)
 
                                 // render result
                                 statusSpan.innerHTML = 'Success'
+                                statusSpan.setAttribute('style', `color: rgb(0, 102, 255);`)
+
                                 // You successfully purchased ${itemInfo.properties.name} from <span class="modal-${orderInfo.id}-owner"></span>
                                 progressSpan.innerHTML = `You successfully purchased`
                             })
-
-                        //                             .once('sending', function(payload){ ... })
-                        // .once('sent', function(payload){ ... })
-                        // .once('transactionHash', function(hash){ ... })
-                        // .once('receipt', function(receipt){ ... })
-                        // .on('confirmation', function(confNumber, receipt, latestBlockHash){ ... })
-                        // .on('error', function(error){ ... })
-                        // .then(function(receipt){
-                        //     // will be fired once the receipt is mined
-                        // });
                     })
                 }
             })
@@ -238,32 +189,37 @@ export class RaribleBuyNow extends HTMLElement {
                         </div>
 
                         <div style="margin-top: 15px">
-                            <div style="display: ${itemInfo.item.totalStock == 1 ? 'none' : 'unset'}">
-                                <input type="text" placeholder="qty" value="1" />
-                                <div class="input-hint">Enter quantity. ${itemInfo.item.totalStock - 1} available</div>
+                            <div>
+                                <div class="rarible-input-wrap">
+                                    <input type="text" placeholder="qty" value="1" readonly disabled />
+                                </div>
+                                <div class="rarible-input-hint">Enter quantity. ${itemInfo.item.totalStock} available</div>
                             </div>
                             <div>
-                                <input type="text" placeholder="price" value="${orderInfo.sellPriceEth}" />
-                                <div class="input-hint">Price per edition</span></div>
+                                <div class="rarible-input-wrap">
+                                    <input type="text" placeholder="price" value="${orderInfo.sellPrice}" readonly disabled />
+                                    <label>${RaribleConstant.DEFAULT_CURRENCY}</label>
+                                </div>
+                                <div class="rarible-input-hint">Price per edition</span></div>
                             </div>
                         </div>
                         
                         <div style="margin-top: 15px">
                             <div style="display: flex; justify-content: space-between;">
                                 <span>Your balance</span>
-                                <span><strong><span id="modal-${orderInfo.id}-balance">0</span> ETH</strong></span>
+                                <span><strong><span id="modal-${orderInfo.id}-balance">0</span> ${RaribleConstant.DEFAULT_CURRENCY}</strong></span>
                             </div>
                             <div style="display: flex; justify-content: space-between;">
                                 <span>Service fee</span>
-                                <span><strong>${roundPrice(orderInfo.sellPriceEth * 0.025, 6)} ETH</strong></span>
+                                <span><strong>${roundPrice(orderInfo.sellPrice * RaribleConstant.SERVICE_FEE, 6)} ${RaribleConstant.DEFAULT_CURRENCY}</strong></span>
                             </div>
                             <div style="display: flex; justify-content: space-between;">
                                 <span>Total price</span> 
-                                <span><strong>${orderInfo.sellPriceEth} ETH</strong></span>
+                                <span><strong>${orderInfo.sellPrice} ${RaribleConstant.DEFAULT_CURRENCY}</strong></span>
                             </div>
                             <div style="display: flex; justify-content: space-between;">
                                 <span>You will pay</span>
-                                <span><strong>${roundPrice(orderInfo.sellPriceEth * 1.025, 6)} ETH</strong></span>
+                                <span><strong>${roundPrice(orderInfo.sellPrice * (1 + RaribleConstant.SERVICE_FEE), 6)} ${RaribleConstant.DEFAULT_CURRENCY}</strong></span>
                             </div>
                         </div>
 
@@ -287,14 +243,14 @@ export class RaribleBuyNow extends HTMLElement {
                         </div>
 
                         <div style="margin-top: 15px; text-align: center; font-weight: 600; font-size: 16px" >
-                            <span id="modal-result-${orderInfo.id}-progres">You are about to purchase</span> ${itemInfo.properties.name} from <span class="modal-${orderInfo.id}-owner"></span>
+                            <span id="modal-result-${orderInfo.id}-progress">You are about to purchase</span> ${itemInfo.properties.name} from <span class="modal-${orderInfo.id}-owner"></span>
                         </div>
 
                         <div style="margin-top: 15px; text-align: left; display: flex; justify-content: space-between; 
                                 border-radius: 16px; border: 1px solid rgb(230, 230, 230); padding: 15px 20px 15px 20px;">
                             <div style="display: flex; flex-direction: column; width: 100px;">
                                 <span style="font-size: 12px">Status</span>
-                                <span id="modal-result-${orderInfo.id}-status" style="color: rgb(0, 102, 255);">Unknown</span>
+                                <span id="modal-result-${orderInfo.id}-status">Unknown</span>
                             </div>
                             <div style="display: flex; flex-direction: column; width: 170px;">
                                 <span style="font-size: 12px">Transaction hash</span>
@@ -353,7 +309,7 @@ export class RaribleBuyNow extends HTMLElement {
             color: rgb(255, 255, 255);
             background: rgba(0, 102, 255, 0.9);
             min-width: 100px;
-            min-height: 32px;
+            min-height: 28px;
             font-weight: 600;
             cursor: pointer;
             padding: 0px 15px 0px 15px;
@@ -371,9 +327,9 @@ export class RaribleBuyNow extends HTMLElement {
             height: 100%; /* Full height */
             overflow: auto; /* Enable scroll if needed */
             background-color: rgb(0,0,0); /* Fallback color */
-            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            background-color: rgba(0,0,0,0.8); /* Black w/ opacity */
         }
-        
+
         /* Modal Content */
         .rarible-modal-content {
             background-color: #fefefe;
@@ -386,7 +342,35 @@ export class RaribleBuyNow extends HTMLElement {
             line-height: 22px;
             font-weight: 600;
             font-size: 14px;
+            position: relative;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+            -webkit-animation-name: animatebottom;
+            -webkit-animation-duration: 0.5s;
+            animation-name: animatebottom;
+            animation-duration: 0.5s
         }
+
+        /* Add Animation */
+        @-webkit-keyframes animatetop {
+            from {top:-300px; opacity:0} 
+            to {top:0; opacity:1}
+        }
+
+        @keyframes animatetop {
+            from {top:-300px; opacity:0}
+            to {top:0; opacity:1}
+        }
+
+        @-webkit-keyframes animatebottom {
+            from {bottom:-300px; opacity:0} 
+            to {bottom:0; opacity:1}
+        }
+
+        @keyframes animatebottom {
+            from {bottom:-300px; opacity:0}
+            to {bottom:0; opacity:1}
+        }
+
 
         /* The Close Button */
         .rarible-modal-close {
@@ -415,19 +399,26 @@ export class RaribleBuyNow extends HTMLElement {
             font-weight: 900;
         }
 
-        .rarible-modal-content .input-hint {
+        .rarible-input-hint {
             font-size: 13px;
         }
 
         .rarible-modal-content input[type="text"] {
-            border-width: 0px 0px 2px;
+            border: none;
             min-height: 36px;
-            border-bottom-color: rgba(4, 4, 5, 0.07);
-            border-style: solid;
             width: 100%;
             font-size: 16px;
             font-weight: 600;
             color: rgba(4, 4, 5, 0.5);
+            background-color: white;
+        }
+
+        .rarible-input-wrap {
+            display: flex;flex-direction: row;
+            align-items: center;
+            border-bottom-color: rgba(4, 4, 5, 0.07);
+            border-style: solid;
+            border-width: 0px 0px 2px;
         }
 
         .rarible-btn {
