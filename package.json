@@ -22,7 +22,6 @@
   "homepage": "https://github.com/kryptopoo/rarible-embeds#readme",
   "dependencies": {
     "axios": "^0.21.1",
-    "buffer": "^6.0.3",
     "confetti-js": "0.0.18",
     "easyqrcodejs": "^4.4.3",
     "web3": "^1.2.4"
