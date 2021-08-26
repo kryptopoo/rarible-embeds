@@ -11,12 +11,20 @@ Embeds Rarible cards in many forms
 -   Cars with Buy Now button integration
 -   QR code for specific item
 
+## Build
+
+Webpack bundle
+
+```
+npx webpack -w
+```
+
 ## Usage
 
 1. Add script to your <head> tag:
 
 ```
-<script src="https://cdn.jsdelivr.net/gh/kryptopoo/rarible-embeds/dist/rarible-embeds.min.js"></script>
+<script src="https://cdn.statically.io/gh/kryptopoo/rarible-embeds/v0.1.1/dist/rarible-embeds.min.js"></script>
 ```
 
 2. Add html tag into your website where you want to embed
@@ -28,6 +36,14 @@ Embeds Rarible cards in many forms
   env="dev"
   >
 </rarible-card>
+```
+
+```
+<rarible-qr
+  itemId="0x71b053bcaf286ba20d9006845412d4532a8e1f34:10694"
+  env="dev"
+  >
+</rarible-qr>
 ```
 
 ### Parameters
