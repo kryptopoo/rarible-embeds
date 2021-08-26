@@ -140,7 +140,6 @@ export class RaribleBuyNow extends HTMLElement {
                                 statusSpan.innerHTML = 'Processing'
                                 statusSpan.setAttribute('style', `color: rgb(175, 162, 63);`)
 
-                                console.log('shoraddres', shortAddress(hash))
                                 transactionSpan.innerHTML = shortAddress(hash)
                                 transactionSpan.setAttribute('href', _this.config.getEtherscanUrl(hash))
 
