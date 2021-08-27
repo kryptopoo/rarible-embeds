@@ -11,6 +11,12 @@ Embeds Rarible cards in many forms
 -   Cars with Buy Now button integration
 -   QR code for specific item
 
+## Demo
+
+[![IMAGE_ALT](https://img.youtube.com/vi/V2yIZ6EMdRA/0.jpg)](https://youtu.be/V2yIZ6EMdRA)
+
+You can also try it at [Showcase Demo](https://gateway.pinata.cloud/ipfs/QmaNQg1iQAW1eSQSvErsjKe1WWGmHUExtbcpw1dUNAp1uf/demo.html).
+
 ## Build
 
 Webpack bundle
@@ -24,7 +30,7 @@ npx webpack -w
 1. Add script to your <head> tag:
 
 ```
-<script src="https://cdn.statically.io/gh/kryptopoo/rarible-embeds/v0.1.1/dist/rarible-embeds.min.js"></script>
+<script src="https://cdn.statically.io/gh/kryptopoo/rarible-embeds/v0.2/dist/rarible-embeds.min.js"></script>
 ```
 
 2. Add html tag into your website where you want to embed
