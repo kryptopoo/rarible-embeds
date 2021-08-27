@@ -3,8 +3,8 @@ export class Config {
     ImagesUrl = 'https://images.rarible.com'
     IpfsUrl = 'https://ipfs.rarible.com'
     DefaultAvatarUrl = 'https://ipfs.rarible.com/ipfs/QmfNA7QWXzSp5G7qwkR9DxR225AGbtxjtfGDKrX2s9TV2N'
-    ProtocolApiUrl = 'https://api.rarible.com/protocol/v0.1'
-    MarketplaceApiUrl = 'https://api-mainnet.rarible.com/marketplace/api/v2'
+    ProtocolApiUrl = 'https://ethereum-api.rarible.org/v0.1'
+    MarketplaceApiUrl = 'https://api-mainnet.rarible.com/marketplace/api/v4'
     EtherScanUrl = 'https://etherscan.io'
     Environment = 'production'
 
@@ -15,8 +15,8 @@ export class Config {
             this.ImagesUrl = ''
             this.IpfsUrl = 'https://ipfs.rarible.com'
             this.DefaultAvatarUrl = 'https://ipfs.rarible.com/ipfs/QmfNA7QWXzSp5G7qwkR9DxR225AGbtxjtfGDKrX2s9TV2N'
-            this.ProtocolApiUrl = 'https://api-dev.rarible.com/protocol/v0.1'
-            this.MarketplaceApiUrl = 'https://api-ropsten.rarible.com/marketplace/api/v3'
+            this.ProtocolApiUrl = 'https://ethereum-api-dev.rarible.org/v0.1'
+            this.MarketplaceApiUrl = 'https://api-ropsten.rarible.com/marketplace/api/v4'
             this.EtherScanUrl = 'https://ropsten.etherscan.io'
         }
         if (env.toLowerCase() === 'staging') {
@@ -25,8 +25,8 @@ export class Config {
             this.ImagesUrl = ''
             this.IpfsUrl = 'https://ipfs.rarible.com'
             this.DefaultAvatarUrl = 'https://ipfs.rarible.com/ipfs/QmfNA7QWXzSp5G7qwkR9DxR225AGbtxjtfGDKrX2s9TV2N'
-            this.ProtocolApiUrl = 'https://rinkeby.rarible.com/protocol/v0.1'
-            this.MarketplaceApiUrl = 'https://rinkeby.rarible.com/marketplace/api/v3'
+            this.ProtocolApiUrl = 'https://ethereum-api-staging.rarible.org/v0.1'
+            this.MarketplaceApiUrl = 'https://api-rinkeby.rarible.com/marketplace/api/v4'
             this.EtherScanUrl = 'https://rinkeby.etherscan.io'
         }
     }

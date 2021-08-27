@@ -11,12 +11,12 @@ export class RaribleApi {
 
     // PROTOCOL APIS
     public getItemById(itemId: string) {
-        let url = `${this.protocolUrl}/ethereum/nft/items/${itemId}`
+        let url = `${this.protocolUrl}/nft/items/${itemId}`
         return axios.get(url)
     }
 
     public getItemMetaById(itemId: string) {
-        let url = `${this.protocolUrl}/ethereum/nft/items/${itemId}/meta`
+        let url = `${this.protocolUrl}/nft/items/${itemId}/meta`
         return axios.get(url)
     }
 
